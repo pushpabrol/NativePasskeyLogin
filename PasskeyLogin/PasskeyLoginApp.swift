@@ -9,9 +9,10 @@ import SwiftUI
 
 @main
 struct PasskeyLoginApp: App {
+    @StateObject private var accountStore = AccountStore()
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            ContentView(accountStore: accountStore)
         }
     }
 }
