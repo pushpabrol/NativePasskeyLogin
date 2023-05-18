@@ -13,11 +13,10 @@
 		1193F3A92A12F2AF00C9A278 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1193F3A82A12F2AF00C9A278 /* Preview Assets.xcassets */; };
 		1193F3B02A12F38D00C9A278 /* AccountStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1193F3AF2A12F38D00C9A278 /* AccountStore.swift */; };
 		1193F3B22A12F3C900C9A278 /* User.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1193F3B12A12F3C900C9A278 /* User.swift */; };
-		1193F3B42A12F42100C9A278 /* LoggedInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1193F3B32A12F42100C9A278 /* LoggedInView.swift */; };
 		1193F3B62A12F45800C9A278 /* SignUpView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1193F3B52A12F45800C9A278 /* SignUpView.swift */; };
 		11CE33952A13AED7005F0677 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11CE33942A13AED7005F0677 /* Models.swift */; };
 		11CE33982A13AFCD005F0677 /* Alamofire in Frameworks */ = {isa = PBXBuildFile; productRef = 11CE33972A13AFCD005F0677 /* Alamofire */; };
-		11CE339A2A13DF99005F0677 /* AccountManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11CE33992A13DF99005F0677 /* AccountManager.swift */; };
+		11CE33C42A153ACE005F0677 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = 11CE33C32A153ACE005F0677 /* README.md */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -28,11 +27,10 @@
 		1193F3A82A12F2AF00C9A278 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		1193F3AF2A12F38D00C9A278 /* AccountStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountStore.swift; sourceTree = "<group>"; };
 		1193F3B12A12F3C900C9A278 /* User.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = User.swift; sourceTree = "<group>"; };
-		1193F3B32A12F42100C9A278 /* LoggedInView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoggedInView.swift; sourceTree = "<group>"; };
 		1193F3B52A12F45800C9A278 /* SignUpView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignUpView.swift; sourceTree = "<group>"; };
 		11B310F02A12F6B3001E54F3 /* PasskeyLogin.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PasskeyLogin.entitlements; sourceTree = "<group>"; };
 		11CE33942A13AED7005F0677 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
-		11CE33992A13DF99005F0677 /* AccountManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountManager.swift; sourceTree = "<group>"; };
+		11CE33C32A153ACE005F0677 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -50,6 +48,7 @@
 		1193F3952A12F2AD00C9A278 = {
 			isa = PBXGroup;
 			children = (
+				11CE33C32A153ACE005F0677 /* README.md */,
 				1193F3A02A12F2AD00C9A278 /* PasskeyLogin */,
 				1193F39F2A12F2AD00C9A278 /* Products */,
 			);
@@ -73,10 +72,8 @@
 				1193F3A72A12F2AF00C9A278 /* Preview Content */,
 				1193F3AF2A12F38D00C9A278 /* AccountStore.swift */,
 				1193F3B12A12F3C900C9A278 /* User.swift */,
-				1193F3B32A12F42100C9A278 /* LoggedInView.swift */,
 				1193F3B52A12F45800C9A278 /* SignUpView.swift */,
 				11CE33942A13AED7005F0677 /* Models.swift */,
-				11CE33992A13DF99005F0677 /* AccountManager.swift */,
 			);
 			path = PasskeyLogin;
 			sourceTree = "<group>";
@@ -153,6 +150,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				11CE33C42A153ACE005F0677 /* README.md in Resources */,
 				1193F3A92A12F2AF00C9A278 /* Preview Assets.xcassets in Resources */,
 				1193F3A62A12F2AF00C9A278 /* Assets.xcassets in Resources */,
 			);
@@ -165,14 +163,12 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				1193F3B42A12F42100C9A278 /* LoggedInView.swift in Sources */,
 				1193F3B22A12F3C900C9A278 /* User.swift in Sources */,
 				1193F3B02A12F38D00C9A278 /* AccountStore.swift in Sources */,
 				1193F3A42A12F2AD00C9A278 /* ContentView.swift in Sources */,
 				1193F3B62A12F45800C9A278 /* SignUpView.swift in Sources */,
 				1193F3A22A12F2AD00C9A278 /* PasskeyLoginApp.swift in Sources */,
 				11CE33952A13AED7005F0677 /* Models.swift in Sources */,
-				11CE339A2A13DF99005F0677 /* AccountManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

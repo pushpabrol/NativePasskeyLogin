@@ -1,9 +1,3 @@
-/*
-See the LICENSE.txt file for this sample’s licensing information.
-
-Abstract:
-The view where the user can sign up for an account.
-*/
 
 import SwiftUI
 import AuthenticationServices
@@ -24,7 +18,6 @@ struct SignUpView: View {
     @Environment(\.authorizationController) private var authorizationController
     @Environment(\.dismiss) private var dismiss
     @FocusState private var focusedElement: FocusElement?
-    @State private var usePasskey: Bool = true
     @State private var username = ""
     @State private var password = ""
 
@@ -44,24 +37,7 @@ struct SignUpView: View {
                         .labelsHidden()
                 }
                 
-                if !usePasskey {
-                    LabeledContent("Password") {
-                        SecureField("Password", text: $password)
-                        #if os(macOS)
-                            .textContentType(.password)
-                        #elseif os(iOS)
-                            .textContentType(.newPassword)
-                        #endif
-                            .multilineTextAlignment(.trailing)
-                            .focused($focusedElement, equals: .password)
-                            .labelsHidden()
-                    }
-                }
-                
-                LabeledContent("Use Passkey") {
-                    Toggle("Use Passkey", isOn: $usePasskey)
-                        .labelsHidden()
-                }
+
             } header: {
                 Text("Create an account")
             } footer: {
@@ -72,7 +48,7 @@ struct SignUpView: View {
             }
         }
         .formStyle(.grouped)
-        .animation(.default, value: usePasskey)
+        .animation(.default, value: true)
         .navigationTitle("Sign up")
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
@@ -97,21 +73,15 @@ struct SignUpView: View {
 
     private func signUp() async {
         Task {
-            if usePasskey {
                 await accountStore.createPasskeyAccount(authorizationController: authorizationController, username: username)
-            } else {
-                await accountStore.createPasswordAccount(username: username, password: password)
-            }
+        
             dismiss()
         }
     }
 
     private var isFormValid: Bool {
-        if usePasskey {
+
             return !username.isEmpty
-        } else {
-            return !username.isEmpty && !password.isEmpty
-        }
     }
 }
 

@@ -77,10 +77,6 @@ struct ContentView: View {
             }
         }
         .formStyle(.grouped)
-        .navigationTitle("Account")
-        .navigationDestination(for: String.self) { _ in
-            LoggedInView()
-        }
         .sheet(isPresented: $isSignUpSheetPresented) {
             NavigationStack {
                 SignUpView().environmentObject(accountStore)
