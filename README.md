@@ -10,7 +10,7 @@ This code shows how to use
     
 ## How it works?
 
-### AccountStore.swift
+## AccountStore.swift ( Code explanation)
 
     1. signIntoPasskeyAccount(authorizationController:options:): This method performs sign-in with a passkey account. It takes an AuthorizationController instance and additional options for the authorization request. Inside the method, it tries to perform the sign-in requests using authorizationController.performRequests(). If the authorization is successful, it calls the handleAuthorizationResult(authorizationResult:) method. If there are any errors during the sign-in process, it catches the specific types of errors, sets the authzError property to true, and assigns an appropriate error message to authzErrorMessage.
 
