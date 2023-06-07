@@ -1,6 +1,6 @@
 # Passkey Login: A demo project
 
-This a demo implementation of support for passkey in native apps
+This a demo implementation of support for passkey in native apps. This uses a server for passkey registration and login at https://webauthn.desmaximus.com
 
 ## What it does
 
