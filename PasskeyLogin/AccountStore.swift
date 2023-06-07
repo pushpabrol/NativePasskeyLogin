@@ -13,6 +13,7 @@ import Alamofire
 public enum AuthorizationHandlingError: Error {
     case unknownAuthorizationResult(ASAuthorizationResult)
     case otherError
+    case duplicateError
 }
 
 extension AuthorizationHandlingError: LocalizedError {
@@ -24,15 +25,21 @@ extension AuthorizationHandlingError: LocalizedError {
         case .otherError:
             return NSLocalizedString("Encountered an error handling the authorization result.",
                                      comment: "Human readable description of an unknown error while handling the authorization result.")
+            
+        case .duplicateError:
+            return NSLocalizedString("Encountered an error handling the registration.",
+                                     comment: "A user with the same usernme already exists!")
         }
+        
     }
 }
 
 @MainActor
 public final class AccountStore: NSObject, ObservableObject, ASAuthorizationControllerDelegate {
     @Published public private(set) var currentUser: User? = .none
+    public var authzError: Bool = false
+    public private(set) var authzErrorMessage: String? = nil
     
-    let domain = "webauthn.desmaximus.com"
     
     public var isSignedIn: Bool {
         currentUser != nil || currentUser != .none
@@ -56,21 +63,35 @@ public final class AccountStore: NSObject, ObservableObject, ASAuthorizationCont
         } catch let authorizationError as ASAuthorizationError where authorizationError.code == .canceled {
             // The user cancelled the authorization.
             print("The user cancelled passkey authorization.")
+            self.authzError = true
+            self.authzErrorMessage = "The user cancelled passkey authorization."
         } catch let authorizationError as ASAuthorizationError {
             // Some other error occurred occurred during authorization.
             print("Passkey authorization failed. Error: \(authorizationError.localizedDescription)")
+            self.authzError = true
+            self.authzErrorMessage = "Passkey authorization failed. Error: \(authorizationError.localizedDescription)"
         } catch AuthorizationHandlingError.unknownAuthorizationResult(let authorizationResult) {
             // Received an unknown response.
             print("""
             Passkey authorization handling failed. \
             Received an unknown result: \(String(describing: authorizationResult))
             """)
+            self.authzError = true
+            self.authzErrorMessage = """
+            Passkey authorization handling failed. \
+            Received an unknown result: \(String(describing: authorizationResult))
+            """
         } catch {
             // Some other error occurred while handling the authorization.
             print("""
             Passkey authorization handling failed. \
             Caught an unknown error during passkey authorization or handling: \(error.localizedDescription)"
             """)
+            self.authzError = true
+            self.authzErrorMessage = """
+            Passkey authorization handling failed. \
+            Caught an unknown error during passkey authorization or handling: \(error.localizedDescription)"
+            """
         }
     }
     
@@ -93,23 +114,49 @@ public final class AccountStore: NSObject, ObservableObject, ASAuthorizationCont
         } catch let authorizationError as ASAuthorizationError where authorizationError.code == .canceled {
             // The user cancelled the registration.
             print("The user cancelled passkey registration.")
+            self.authzError = true
+            self.authzErrorMessage = "The user cancelled passkey registration."
+            
         } catch let authorizationError as ASAuthorizationError {
             // Some other error occurred occurred during registration.
             print("Passkey registration failed. Error: \(authorizationError.localizedDescription)")
+            self.authzError = true
+            self.authzErrorMessage = "Passkey registration failed. Error: \(authorizationError.localizedDescription)"
         } catch AuthorizationHandlingError.unknownAuthorizationResult(let authorizationResult) {
             // Received an unknown response.
             print("""
             Passkey registration handling failed. \
             Received an unknown result: \(String(describing: authorizationResult))
             """)
+            self.authzError = true
+            self.authzErrorMessage = """
+            Passkey registration handling failed. \
+            Received an unknown result: \(String(describing: authorizationResult))
+            """
+        } catch AuthorizationHandlingError.duplicateError {
+            // Received an unknown response.
+            print("""
+            Passkey registration handling failed. \
+            Received a duplicate enrollment error: \(AuthorizationHandlingError.duplicateError.errorDescription)
+            """)
+            self.authzError = true
+            self.authzErrorMessage = """
+            Passkey registration handling failed. \
+            Received a duplicate enrollment error: \(AuthorizationHandlingError.duplicateError.errorDescription)
+            """
         } catch {
             // Some other error occurred while handling the registration.
-print("""
-Passkey registration handling failed.
-Caught an unknown error during passkey registration or handling: (error.localizedDescription).
-""")
-}
-}
+                print("""
+                Passkey registration handling failed.
+                Caught an unknown error during passkey registration or handling: (error.localizedDescription).
+                """)
+            self.authzError = true
+            self.authzErrorMessage = """
+                Passkey registration handling failed.
+                Caught an unknown error during passkey registration or handling: (error.localizedDescription).
+                """
+            }
+    }
 
 /**
  Performs password account creation.
@@ -143,7 +190,7 @@ private func passkeyAssertionRequest() async -> ASAuthorizationRequest {
         "login": ""
     ]
     
-    let data = try! await AF.request("https://\(domain)/api/login", method: .put,parameters: parameters, encoding: JSONEncoding.default,headers: ["Content-Type": "application/json"]).serializingDecodable(CredentialAssertion.self).value
+    let data = try! await AF.request("https://\(AccountStore.relyingPartyIdentifier)/api/login", method: .put,parameters: parameters, encoding: JSONEncoding.default,headers: ["Content-Type": "application/json"]).serializingDecodable(CredentialAssertion.self).value
     
     let challenge = data.publicKey.challenge.decodeBase64Url()!
     let credProvider = ASAuthorizationPlatformPublicKeyCredentialProvider(relyingPartyIdentifier: Self.relyingPartyIdentifier)
@@ -162,33 +209,73 @@ private func passkeyAssertionRequest() async -> ASAuthorizationRequest {
  - Parameter username: The username for registration.
  - Returns: An ASAuthorizationRequest object representing the passkey registration request.
  */
-private func passkeyRegistrationRequest(username: String) async -> ASAuthorizationRequest {
+private func passkeyRegistrationRequest(username: String) async throws -> ASAuthorizationRequest{
     let parameters: [String: Any] = [
         "login": username,
         "useResidentKey": false
     ]
     
-    let data = try! await AF.request("https://webauthn.desmaximus.com/api/register",
-                                     method: .put,
-                                     parameters: parameters,
-                                     encoding: JSONEncoding.default,
-                                     headers: ["Content-Type": "application/json"])
-        .serializingDecodable(CredentialCreation.self).value
+    
+        var request = AF.request("https://webauthn.desmaximus.com/api/register",
+                                method: .put,
+                                parameters: parameters,
+                                encoding: JSONEncoding.default,
+                                headers: ["Content-Type": "application/json"])
+    
+    do {
+        let response = try await request.serializingDecodable(CredentialCreation.self).response
+        if(response.response?.statusCode == 200) {
+            let data = await response.value!
+            let challenge = data.publicKey.challenge.decodeBase64Url()!
+            let credProvider = ASAuthorizationPlatformPublicKeyCredentialProvider(relyingPartyIdentifier: Self.relyingPartyIdentifier)
+            let userID = data.publicKey.user.id.decodeBase64Url()!
+            let registrationRequest = credProvider.createCredentialRegistrationRequest(challenge: challenge, name: username, userID: userID)
+            
+            if let attestation = data.publicKey.attestation {
+                registrationRequest.attestationPreference = ASAuthorizationPublicKeyCredentialAttestationKind.init(rawValue: attestation)
+            }
+            
+            if let userVerification = data.publicKey.authenticatorSelection?.userVerification {
+                registrationRequest.userVerificationPreference = ASAuthorizationPublicKeyCredentialUserVerificationPreference.init(rawValue: userVerification)
+            }
+            
+            return registrationRequest
+        }
+        else {
+            if(response.response?.statusCode == 409) {
+                throw AuthorizationHandlingError.duplicateError
 
-    let challenge = data.publicKey.challenge.decodeBase64Url()!
-    let credProvider = ASAuthorizationPlatformPublicKeyCredentialProvider(relyingPartyIdentifier: Self.relyingPartyIdentifier)
-    let userID = data.publicKey.user.id.decodeBase64Url()!
-    let registrationRequest = credProvider.createCredentialRegistrationRequest(challenge: challenge, name: username, userID: userID)
-    
-    if let attestation = data.publicKey.attestation {
-        registrationRequest.attestationPreference = ASAuthorizationPublicKeyCredentialAttestationKind.init(rawValue: attestation)
+            }
+            else {
+                throw AuthorizationHandlingError.otherError
+            }
+        }
+        
+    }catch {
+        throw error
     }
     
-    if let userVerification = data.publicKey.authenticatorSelection?.userVerification {
-        registrationRequest.userVerificationPreference = ASAuthorizationPublicKeyCredentialUserVerificationPreference.init(rawValue: userVerification)
-    }
-    
-    return registrationRequest
+        let data = try await AF.request("https://webauthn.desmaximus.com/api/register",
+                                         method: .put,
+                                         parameters: parameters,
+                                         encoding: JSONEncoding.default,
+                                         headers: ["Content-Type": "application/json"])
+            .serializingDecodable(CredentialCreation.self).value
+        let challenge = data.publicKey.challenge.decodeBase64Url()!
+        let credProvider = ASAuthorizationPlatformPublicKeyCredentialProvider(relyingPartyIdentifier: Self.relyingPartyIdentifier)
+        let userID = data.publicKey.user.id.decodeBase64Url()!
+        let registrationRequest = credProvider.createCredentialRegistrationRequest(challenge: challenge, name: username, userID: userID)
+        
+        if let attestation = data.publicKey.attestation {
+            registrationRequest.attestationPreference = ASAuthorizationPublicKeyCredentialAttestationKind.init(rawValue: attestation)
+        }
+        
+        if let userVerification = data.publicKey.authenticatorSelection?.userVerification {
+            registrationRequest.userVerificationPreference = ASAuthorizationPublicKeyCredentialUserVerificationPreference.init(rawValue: userVerification)
+        }
+        
+        return registrationRequest
+
 }
 
 /**
@@ -198,31 +285,74 @@ private func passkeyRegistrationRequest(username: String) async -> ASAuthorizati
     - params: The registration response parameters.
     - completionHandler: A completion handler to be called when the response is sent.
  */
-func sendRegistrationResponse(params: ASAuthorizationPlatformPublicKeyCredentialRegistration, completionHandler: @escaping () -> Void) {
-    let response = [
-        "attestationObject": params.rawAttestationObject!.toBase64Url(),
-"clientDataJSON": String(data: params.rawClientDataJSON, encoding: .utf8),
-"id": params.credentialID.toBase64Url()
-]
-let parameters: Parameters = [
-"id": params.credentialID.toBase64Url(),
-"rawId": params.credentialID.toBase64Url(),
-"type": "public-key",
-"attestation": response
-]
+//func sendRegistrationResponse(params: ASAuthorizationPlatformPublicKeyCredentialRegistration, completionHandler: @escaping (String) -> Void) {
+//    let response = [
+//        "attestationObject": params.rawAttestationObject!.toBase64Url(),
+//        "clientDataJSON": String(data: params.rawClientDataJSON, encoding: .utf8),
+//        "id": params.credentialID.toBase64Url()
+//        ]
+//        let parameters: Parameters = [
+//        "id": params.credentialID.toBase64Url(),
+//        "rawId": params.credentialID.toBase64Url(),
+//        "type": "public-key",
+//        "attestation": response
+//        ]
+//
+////    let data = try! await AF.request("https://\(AccountStore.relyingPartyIdentifier)/api/login", method: .put,parameters: parameters, encoding: JSONEncoding.default,headers: ["Content-Type": "application/json"]).serializingDecodable(CredentialAssertion.self).value
+//
+//    AF.request("https://\(AccountStore.relyingPartyIdentifier)/api/make-new-credential",
+//               method: .put,
+//               parameters: parameters,
+//               encoding: JSONEncoding.default,
+//               headers: ["Content-Type": "application/json"]).responseDecodable(of: MakeCredentialCreationResponse.self){ response in
+//                    print(response)
+//            //to get status code
+//        if let status = response.response?.statusCode {
+//            switch(status){
+//            case 200:
+//                print("example success")
+//                if let result = response.value {
+//                    completionHandler(result.login)
+//                            }
+//
+//            default:
+//                print("error with response status: \(status)")
+//            }
+//        }
+//
+//
+//
+//
+//}
+//}
+    
+    func sendRegistrationResponse(params: ASAuthorizationPlatformPublicKeyCredentialRegistration) async throws -> String {
+        let response = [
+            "attestationObject": params.rawAttestationObject!.toBase64Url(),
+            "clientDataJSON": String(data: params.rawClientDataJSON, encoding: .utf8),
+            "id": params.credentialID.toBase64Url()
+        ]
+        let parameters: Parameters = [
+            "id": params.credentialID.toBase64Url(),
+            "rawId": params.credentialID.toBase64Url(),
+            "type": "public-key",
+            "attestation": response
+        ]
 
-    AF.request("https://\(domain)/api/make-new-credential",
-               method: .put,
-               parameters: parameters,
-               encoding: JSONEncoding.default,
-               headers: ["Content-Type": "application/json"]).response { response in
-        if (response.response?.statusCode == 200) {
-            completionHandler()
-        } else {
-            print("Error: \(response.error?.errorDescription ?? "unknown error")")
+        let request = AF.request("https://\(AccountStore.relyingPartyIdentifier)/api/make-new-credential",
+                                 method: .put,
+                                 parameters: parameters,
+                                 encoding: JSONEncoding.default,
+                                 headers: ["Content-Type": "application/json"])
+
+        do {
+            let response = request.serializingDecodable(CredentialCreationVerificationResponse.self)
+            return try await response.value.login
+        } catch {
+            throw error
         }
     }
-}
+
 
 /**
  Creates an array of ASAuthorizationRequest objects for sign-in.
@@ -240,31 +370,32 @@ private func signInRequests() async -> [ASAuthorizationRequest] {
     - params: The authentication response parameters.
     - completionHandler: A completion handler to be called when the response is sent.
  */
-func sendAuthenticationResponse(params: ASAuthorizationPlatformPublicKeyCredentialAssertion, completionHandler: @escaping () -> Void) {
-    let response = [
-        "authenticatorData": params.rawAuthenticatorData.toBase64Url(),
-        "clientDataJSON": String(data: params.rawClientDataJSON, encoding: .utf8),
-        "signature": params.signature.toBase64Url(),
-        "userHandle": params.userID.toBase64Url(),
-        "id": params.credentialID.base64EncodedString(),
-        "rawId": params.credentialID.toBase64Url(),
-        "type": "public-key"
-    ]
-    let parameters: Parameters = [
-        "assertion": response
-    ]
-    
-    AF.request("https://\(domain)/api/verify-assertion",
-               method: .put,
-               parameters: parameters,
-               encoding: JSONEncoding.default).response { response in
-        if (response.response?.statusCode == 200) {
-            completionHandler()
-        } else {
-            Logger().error("Error: \(response.error?.errorDescription ?? "unknown error")")
+    func sendAuthenticationResponse(params: ASAuthorizationPlatformPublicKeyCredentialAssertion) async throws -> String {
+        let response = [
+            "authenticatorData": params.rawAuthenticatorData.toBase64Url(),
+            "clientDataJSON": String(data: params.rawClientDataJSON, encoding: .utf8),
+            "signature": params.signature.toBase64Url(),
+            "userHandle": params.userID.toBase64Url(),
+            "id": params.credentialID.base64EncodedString(),
+            "rawId": params.credentialID.toBase64Url(),
+            "type": "public-key"
+        ]
+        let parameters: Parameters = [
+            "assertion": response
+        ]
+        
+        let request = AF.request("https://\(AccountStore.relyingPartyIdentifier)/api/verify-assertion",
+                   method: .put,
+                   parameters: parameters,
+                   encoding: JSONEncoding.default)
+        
+        do {
+            let response = request.serializingDecodable(CredentialCreationVerificationResponse.self)
+            return try await response.value.login
+        } catch {
+            throw error
         }
     }
-}
 
 // MARK: - Handle the results.
 
@@ -286,23 +417,35 @@ private func handleAuthorizationResult(_ authorizationResult: ASAuthorizationRes
         print("Passkey authorization succeeded: \(passkeyAssertion)")
         let pkAss = passkeyAssertion as ASAuthorizationPlatformPublicKeyCredentialAssertion
         print("A credential was used to authenticate: \(pkAss)")
+        // Verify the assertion and sign the user in.
         
-        // After the server has verified the assertion, sign the user in.
-        sendAuthenticationResponse(params: pkAss) {
-            guard let username = String(bytes: pkAss.userID, encoding: .utf8) else {
-                fatalError("Invalid credential: \(passkeyAssertion)")
-            }
-            self.currentUser = .authenticated(username: username)
+        do {
+            let login = try await sendAuthenticationResponse(params: pkAss)
+            self.currentUser = .authenticated(username: login)
         }
+        catch {
+            print("Credential authentication failed: \(pkAss)")
+            throw AuthorizationHandlingError.unknownAuthorizationResult(authorizationResult)
+        }
+    
     case let .passkeyRegistration(passkeyRegistration):
         // Passkey registration succeeded.
         let reg = passkeyRegistration as ASAuthorizationPlatformPublicKeyCredentialRegistration
-        sendRegistrationResponse(params: reg) {
-            if let username = username {
-                self.currentUser = .authenticated(username: username)
+        do {
+            let login = try await sendRegistrationResponse(params: reg)
+            if(username == login)
+            {
+                self.currentUser = .authenticated(username: username!)
             }
+            
+            print("Passkey registration succeeded: \(passkeyRegistration)")
+        }catch {
+            
+            print("Passkey registration failed: \(passkeyRegistration)")
+
+            throw AuthorizationHandlingError.unknownAuthorizationResult(authorizationResult)
+
         }
-        print("Passkey registration succeeded: \(passkeyRegistration)")
     default:
         // Received an unknown authorization result.
         print("Received an unknown authorization result.")

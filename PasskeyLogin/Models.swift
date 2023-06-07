@@ -39,3 +39,12 @@ class CredentialAssertionPublicKey : Codable {
     var userVerification: String?
 }
 
+class CredentialCreationResponse : Codable {
+    var challenge: String
+    var userVerification: String?
+}
+
+class CredentialCreationVerificationResponse : Codable {
+    var login: String
+}
+

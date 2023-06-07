@@ -68,6 +68,8 @@ struct SignUpView: View {
         }
         .onAppear {
             focusedElement = .username
+        }.alert(isPresented: $accountStore.authzError){
+            errorAlert
         }
     }
 
@@ -75,13 +77,25 @@ struct SignUpView: View {
         Task {
                 await accountStore.createPasskeyAccount(authorizationController: authorizationController, username: username)
         
-            dismiss()
+            if(!accountStore.authzError) {
+                dismiss()
+            }
         }
     }
 
     private var isFormValid: Bool {
 
             return !username.isEmpty
+    }
+    
+    private var errorAlert: Alert {
+        Alert(
+            title: Text(accountStore.authzErrorMessage!),
+            primaryButton: .destructive(Text("Ok")) {
+                dismiss()
+            },
+            secondaryButton: .cancel()
+        )
     }
 }
 

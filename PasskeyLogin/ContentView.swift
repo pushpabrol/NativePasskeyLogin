@@ -14,6 +14,7 @@ struct ContentView: View {
 
     @Environment(\.authorizationController) private var authorizationController
     
+    
     @State private var isSignUpSheetPresented = false
     @State private var isSignOutAlertPresented = false
 
@@ -32,6 +33,8 @@ struct ContentView: View {
                         Text(username)
                             .font(.system(.title3, design: .rounded))
                             .fontWeight(.medium)
+                            .textContentType(.username)
+                            
                     }
                 }
             }
@@ -40,7 +43,7 @@ struct ContentView: View {
                 if accountStore.isSignedIn {
                     LabeledContent("Sign out") {
                         Button("Sign Out", role: .destructive) {
-                            isSignOutAlertPresented = true
+                            accountStore.signOut()
                         }
                         .frame(maxWidth: .infinity)
                     }
@@ -81,9 +84,19 @@ struct ContentView: View {
             NavigationStack {
                 SignUpView().environmentObject(accountStore)
             }
+        }.onAppear{
+            print(accountStore.authzErrorMessage ?? "")
         }
-        .alert(isPresented: $isSignOutAlertPresented) {
-            signOutAlert
+        .alert(isPresented: $accountStore.authzError){
+            Alert(
+                title: Text(accountStore.authzErrorMessage!),
+                
+                dismissButton: .default(Text("OK")) {
+                    
+                    accountStore.authzError = false
+                    accountStore.signOut()
+                }
+            )
         }
     }
     
@@ -91,15 +104,6 @@ struct ContentView: View {
         await accountStore.signIntoPasskeyAccount(authorizationController: authorizationController)
     }
 
-    private var signOutAlert: Alert {
-        Alert(
-            title: Text("Are you sure you want to sign out?"),
-            primaryButton: .destructive(Text("Sign Out")) {
-                accountStore.signOut()
-            },
-            secondaryButton: .cancel()
-        )
-    }
 }
 
 struct ContentView_Previews: PreviewProvider {
