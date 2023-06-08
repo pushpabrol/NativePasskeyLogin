@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		1149AFB92A316DEE00A6FDFB /* Helpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1149AFB82A316DEE00A6FDFB /* Helpers.swift */; };
+		1149AFBB2A316E4800A6FDFB /* PasskeyLogin.plist in Resources */ = {isa = PBXBuildFile; fileRef = 1149AFBA2A316E4800A6FDFB /* PasskeyLogin.plist */; };
 		1193F3A22A12F2AD00C9A278 /* PasskeyLoginApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1193F3A12A12F2AD00C9A278 /* PasskeyLoginApp.swift */; };
 		1193F3A42A12F2AD00C9A278 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1193F3A32A12F2AD00C9A278 /* ContentView.swift */; };
 		1193F3A62A12F2AF00C9A278 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1193F3A52A12F2AF00C9A278 /* Assets.xcassets */; };
@@ -20,6 +22,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		1149AFB82A316DEE00A6FDFB /* Helpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Helpers.swift; sourceTree = "<group>"; };
+		1149AFBA2A316E4800A6FDFB /* PasskeyLogin.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = PasskeyLogin.plist; sourceTree = "<group>"; };
 		1193F39E2A12F2AD00C9A278 /* PasskeyLogin.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PasskeyLogin.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		1193F3A12A12F2AD00C9A278 /* PasskeyLoginApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasskeyLoginApp.swift; sourceTree = "<group>"; };
 		1193F3A32A12F2AD00C9A278 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -74,6 +78,8 @@
 				1193F3B12A12F3C900C9A278 /* User.swift */,
 				1193F3B52A12F45800C9A278 /* SignUpView.swift */,
 				11CE33942A13AED7005F0677 /* Models.swift */,
+				1149AFB82A316DEE00A6FDFB /* Helpers.swift */,
+				1149AFBA2A316E4800A6FDFB /* PasskeyLogin.plist */,
 			);
 			path = PasskeyLogin;
 			sourceTree = "<group>";
@@ -151,6 +157,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				11CE33C42A153ACE005F0677 /* README.md in Resources */,
+				1149AFBB2A316E4800A6FDFB /* PasskeyLogin.plist in Resources */,
 				1193F3A92A12F2AF00C9A278 /* Preview Assets.xcassets in Resources */,
 				1193F3A62A12F2AF00C9A278 /* Assets.xcassets in Resources */,
 			);
@@ -164,6 +171,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				1193F3B22A12F3C900C9A278 /* User.swift in Sources */,
+				1149AFB92A316DEE00A6FDFB /* Helpers.swift in Sources */,
 				1193F3B02A12F38D00C9A278 /* AccountStore.swift in Sources */,
 				1193F3A42A12F2AD00C9A278 /* ContentView.swift in Sources */,
 				1193F3B62A12F45800C9A278 /* SignUpView.swift in Sources */,

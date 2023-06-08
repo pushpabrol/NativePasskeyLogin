@@ -137,12 +137,12 @@ public final class AccountStore: NSObject, ObservableObject, ASAuthorizationCont
             // Received an unknown response.
             print("""
             Passkey registration handling failed. \
-            Received a duplicate enrollment error: \(AuthorizationHandlingError.duplicateError.errorDescription)
+            Received a duplicate enrollment error: \(AuthorizationHandlingError.duplicateError.errorDescription ?? "")
             """)
             self.authzError = true
             self.authzErrorMessage = """
             Passkey registration handling failed. \
-            Received a duplicate enrollment error: \(AuthorizationHandlingError.duplicateError.errorDescription)
+            Received a duplicate enrollment error: \(String(describing: AuthorizationHandlingError.duplicateError.errorDescription))
             """
         } catch {
             // Some other error occurred while handling the registration.
@@ -178,7 +178,7 @@ public func signOut() {
 
 // MARK: - Private
 
-private static let relyingPartyIdentifier = "webauthn.desmaximus.com"
+    private static let relyingPartyIdentifier = Helpers.readWebAuthnServerDomain()
 
 /**
  Performs a passkey assertion request and returns an ASAuthorizationRequest object.
@@ -216,16 +216,16 @@ private func passkeyRegistrationRequest(username: String) async throws -> ASAuth
     ]
     
     
-        var request = AF.request("https://webauthn.desmaximus.com/api/register",
+    let request = AF.request("https://\(AccountStore.relyingPartyIdentifier)/api/register",
                                 method: .put,
                                 parameters: parameters,
                                 encoding: JSONEncoding.default,
                                 headers: ["Content-Type": "application/json"])
     
     do {
-        let response = try await request.serializingDecodable(CredentialCreation.self).response
+        let response = await request.serializingDecodable(CredentialCreation.self).response
         if(response.response?.statusCode == 200) {
-            let data = await response.value!
+            let data = response.value!
             let challenge = data.publicKey.challenge.decodeBase64Url()!
             let credProvider = ASAuthorizationPlatformPublicKeyCredentialProvider(relyingPartyIdentifier: Self.relyingPartyIdentifier)
             let userID = data.publicKey.user.id.decodeBase64Url()!
@@ -254,78 +254,17 @@ private func passkeyRegistrationRequest(username: String) async throws -> ASAuth
     }catch {
         throw error
     }
-    
-        let data = try await AF.request("https://webauthn.desmaximus.com/api/register",
-                                         method: .put,
-                                         parameters: parameters,
-                                         encoding: JSONEncoding.default,
-                                         headers: ["Content-Type": "application/json"])
-            .serializingDecodable(CredentialCreation.self).value
-        let challenge = data.publicKey.challenge.decodeBase64Url()!
-        let credProvider = ASAuthorizationPlatformPublicKeyCredentialProvider(relyingPartyIdentifier: Self.relyingPartyIdentifier)
-        let userID = data.publicKey.user.id.decodeBase64Url()!
-        let registrationRequest = credProvider.createCredentialRegistrationRequest(challenge: challenge, name: username, userID: userID)
-        
-        if let attestation = data.publicKey.attestation {
-            registrationRequest.attestationPreference = ASAuthorizationPublicKeyCredentialAttestationKind.init(rawValue: attestation)
-        }
-        
-        if let userVerification = data.publicKey.authenticatorSelection?.userVerification {
-            registrationRequest.userVerificationPreference = ASAuthorizationPublicKeyCredentialUserVerificationPreference.init(rawValue: userVerification)
-        }
-        
-        return registrationRequest
 
 }
 
-/**
- Sends the registration response to the server.
- 
- - Parameters:
-    - params: The registration response parameters.
-    - completionHandler: A completion handler to be called when the response is sent.
- */
-//func sendRegistrationResponse(params: ASAuthorizationPlatformPublicKeyCredentialRegistration, completionHandler: @escaping (String) -> Void) {
-//    let response = [
-//        "attestationObject": params.rawAttestationObject!.toBase64Url(),
-//        "clientDataJSON": String(data: params.rawClientDataJSON, encoding: .utf8),
-//        "id": params.credentialID.toBase64Url()
-//        ]
-//        let parameters: Parameters = [
-//        "id": params.credentialID.toBase64Url(),
-//        "rawId": params.credentialID.toBase64Url(),
-//        "type": "public-key",
-//        "attestation": response
-//        ]
-//
-////    let data = try! await AF.request("https://\(AccountStore.relyingPartyIdentifier)/api/login", method: .put,parameters: parameters, encoding: JSONEncoding.default,headers: ["Content-Type": "application/json"]).serializingDecodable(CredentialAssertion.self).value
-//
-//    AF.request("https://\(AccountStore.relyingPartyIdentifier)/api/make-new-credential",
-//               method: .put,
-//               parameters: parameters,
-//               encoding: JSONEncoding.default,
-//               headers: ["Content-Type": "application/json"]).responseDecodable(of: MakeCredentialCreationResponse.self){ response in
-//                    print(response)
-//            //to get status code
-//        if let status = response.response?.statusCode {
-//            switch(status){
-//            case 200:
-//                print("example success")
-//                if let result = response.value {
-//                    completionHandler(result.login)
-//                            }
-//
-//            default:
-//                print("error with response status: \(status)")
-//            }
-//        }
-//
-//
-//
-//
-//}
-//}
-    
+    /**
+     Sends the registration response to the server.
+
+     - Parameters:
+        - params: The registration response parameters.
+     - Returns: The login information obtained from the server response.
+     - Throws: An error if there is a failure in the registration process or during the network request.
+     */
     func sendRegistrationResponse(params: ASAuthorizationPlatformPublicKeyCredentialRegistration) async throws -> String {
         let response = [
             "attestationObject": params.rawAttestationObject!.toBase64Url(),
