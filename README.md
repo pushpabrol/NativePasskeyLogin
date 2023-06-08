@@ -10,6 +10,21 @@ This code demonstrates the following features:
 
 ## How It Works
 
+1. The website at webauthn.desmaximus.com has a file called apple-app-site-association under /.well-known/. This file contains the code to associate the app with the associated domain 
+[https://developer.apple.com/documentation/xcode/supporting-associated-domains](https://developer.apple.com/documentation/xcode/supporting-associated-domains)
+```
+{
+   "webcredentials": {
+      "apps": [ "R82LKF5W93.com.pushp.PasskeyLogin"]
+   }
+}
+```
+
+    - This allows the app to use this site for web credentials
+
+    - When a user opens the app they are allowed to sign in or sign up. For sign in and sign up the ASAuthorizationControllerDelegate ( AccountStore) is setup to talk to the API endoints exposed at webauthn.desmaximus.com
+
+
 This project provides a comprehensive `AccountStore.swift` file that contains the core functionality. Here's a breakdown of each method in the `AccountStore` class:
 
 1. `signIntoPasskeyAccount(authorizationController:options:)`: This method enables sign-in with a passkey account. It utilizes the provided `AuthorizationController` instance and additional options for the authorization request. The method attempts to perform sign-in requests using `authorizationController.performRequests()`. If the authorization is successful, it calls the `handleAuthorizationResult(authorizationResult:)` method. In case of any errors during the sign-in process, it catches the specific types of errors, sets the `authzError` property to `true`, and assigns an appropriate error message to `authzErrorMessage`.
